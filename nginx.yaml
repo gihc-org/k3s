@@ -2,7 +2,8 @@
 apiVersion: apps/v1      # API-versionen der bruges til Deployments
 kind: Deployment         # Ressourcetypen
 metadata:
-  name: nginx            # Navnet på denne Deployment
+  name: nginx
+  namespace: webapps     # Ressourcen oprettes i webapps namespace i stedet for default
 
 spec:
   replicas: 1            # Antal kopier (Pods) der skal køre samtidigt
@@ -43,7 +44,8 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx            # Navnet på denne Service
+  name: nginx
+  namespace: webapps     # Ressourcen oprettes i webapps namespace i stedet for default
 
 spec:
   type: NodePort         # Eksponerer servicen på en fast port på selve noden (Raspberry Pi'en)

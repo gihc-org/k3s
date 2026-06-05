@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginx-config           # Navnet bruges til at referere til ConfigMap'en fra andre ressourcer
+  namespace: webapps           # Skal være i samme namespace som Deployment'en der bruger den
 data:
   index.html: |                # Nøgle = filnavn, værdi = filindhold
     <html>

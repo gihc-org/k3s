@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(systemctl status *)",
+      "Bash(journalctl -xeu k3s.service --no-pager)"
+    ]
+  }
+}

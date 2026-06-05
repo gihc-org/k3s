@@ -99,6 +99,39 @@ myregistry.com/app:latest  → privat registry
 
 Udelades tag (f.eks. `nginx` uden `:alpine`), bruges `:latest` automatisk. I produktion bør man altid angive et specifikt tag for at undgå uventede opdateringer.
 
+### Namespaces
+
+Et namespace er en logisk opdeling af et cluster. Ressourcer i forskellige namespaces er isolerede fra hinanden — to Deployments i hvert sit namespace kan have samme navn uden at konflikte.
+
+Kubernetes opretter fire namespaces som standard:
+
+| Namespace | Formål |
+|-----------|--------|
+| `default` | Bruges hvis intet namespace angives |
+| `kube-system` | Kubernetes' egne systemkomponenter |
+| `kube-public` | Offentligt tilgængeligt data, sjældent brugt |
+| `kube-node-lease` | Bruges internt til at registrere om noder er tilgængelige |
+
+Namespaces bruges typisk til at gruppere ressourcer der hører logisk sammen — f.eks. alle web-applikationer i ét namespace og monitoring-værktøjer i et andet. Det gør det nemmere at få overblik og styre adgang pr. gruppe.
+
+Et namespace angives i `metadata` på en ressource:
+
+```yaml
+metadata:
+  name: nginx
+  namespace: webapps
+```
+
+En ressource kan kun se ConfigMaps og Secrets i sit eget namespace. Namespace skal eksistere før ressourcer oprettes i det — anvend derfor `namespace.yaml` før de øvrige manifests.
+
+For at se ressourcer i et specifikt namespace:
+
+```bash
+sudo k3s kubectl get all -n webapps
+```
+
+**Namespaces vs. separate clusters:** Namespaces giver logisk adskillelse, men ikke fuld isolation. Til adskillelse af `development` og `production` bruger man typisk separate clusters — en fejl i ét miljø kan da ikke påvirke det andet.
+
 ### ConfigMap
 
 En ConfigMap gemmer konfigurationsdata som nøgle/værdi-par — f.eks. en konfigurationsfil, en HTML-fil eller en app-indstilling. Data er ikke krypteret og må ikke indeholde følsomme oplysninger. ConfigMaps kan injiceres i en container på to måder:
