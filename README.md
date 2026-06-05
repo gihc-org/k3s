@@ -47,6 +47,60 @@ Hvis `/boot/firmware/cmdline.txt` overskrives af en fremtidig OS-opdatering, ska
 
 ---
 
+## Kubernetes — grundlæggende begreber
+
+### YAML-filer (manifests)
+
+Kubernetes styres ved at beskrive den ønskede tilstand i YAML-filer, som kaldes **manifests**. I stedet for at fortælle Kubernetes *hvad det skal gøre* (imperativt), fortæller du det *hvad du vil have* (deklarativt). Kubernetes sørger selv for at virkeligheden matcher beskrivelsen.
+
+En YAML-fil sendes til Kubernetes med:
+```bash
+sudo k3s kubectl apply -f filnavn.yaml
+```
+
+Kører du den samme kommando igen uden at have ændret filen, sker der ingenting — Kubernetes registrerer at tilstanden allerede matcher.
+
+Én fil kan indeholde flere ressourcer adskilt af `---`.
+
+### Pod
+
+Den mindste enhed i Kubernetes. En Pod indeholder én eller flere containers der deler netværk og storage. Du opretter sjældent Pods direkte — det gøres typisk via en Deployment.
+
+### Deployment
+
+En Deployment beskriver hvordan en applikation skal køre: hvilket container-image der bruges, hvor mange kopier (replicas) der skal køre, og hvordan opdateringer håndteres. Hvis en Pod crasher, opretter Kubernetes automatisk en ny for at opretholde det ønskede antal replicas.
+
+### Service
+
+En Service eksponerer en Deployment for netværkstrafik. Pods får tilfældige IP-adresser der skifter, når de genskabes — en Service giver et stabilt netværkspunkt foran dem. Der findes flere typer:
+
+| Type | Beskrivelse |
+|------|-------------|
+| `ClusterIP` | Kun tilgængelig inde i clusteret (standard) |
+| `NodePort` | Eksponerer en fast port på selve noden, tilgængelig udefra |
+| `LoadBalancer` | Opretter en ekstern load balancer (kræver cloud-udbyder eller MetalLB) |
+
+### Labels og selectors
+
+Labels er nøgle/værdi-par der sættes på ressourcer, f.eks. `app: nginx`. En Service bruger en selector til at finde de Pods den skal sende trafik til — alle Pods med et matchende label modtager trafik. Det er denne mekanisme der kobler en Service og en Deployment sammen.
+
+### Container-images og registries
+
+Kubernetes henter container-images fra et **container registry**. Når du skriver `image: nginx:alpine`, slår Kubernetes op i **Docker Hub** (hub.docker.com) som er standard-registryet. Formatet er:
+
+```
+[registry/][bruger/]image[:tag]
+
+nginx:alpine               → Docker Hub, officielt nginx-image, alpine-variant
+ubuntu:24.04               → Docker Hub, officielt Ubuntu-image
+ghcr.io/bruger/app:v1.0   → GitHub Container Registry
+myregistry.com/app:latest  → privat registry
+```
+
+Udelades tag (f.eks. `nginx` uden `:alpine`), bruges `:latest` automatisk. I produktion bør man altid angive et specifikt tag for at undgå uventede opdateringer.
+
+---
+
 ## Rettelse af UTF-8 locale (æøå i terminalen)
 
 ### Problem
