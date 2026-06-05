@@ -99,6 +99,36 @@ myregistry.com/app:latest  → privat registry
 
 Udelades tag (f.eks. `nginx` uden `:alpine`), bruges `:latest` automatisk. I produktion bør man altid angive et specifikt tag for at undgå uventede opdateringer.
 
+### ConfigMap
+
+En ConfigMap gemmer konfigurationsdata som nøgle/værdi-par — f.eks. en konfigurationsfil, en HTML-fil eller en app-indstilling. Data er ikke krypteret og må ikke indeholde følsomme oplysninger. ConfigMaps kan injiceres i en container på to måder:
+
+- **Som en fil** — monteres på en sti inde i containeren via et volume
+- **Som en miljøvariabel** — værdien bliver tilgængelig som en `$VARIABEL` inde i containeren
+
+### Secret
+
+En Secret fungerer som en ConfigMap, men er beregnet til følsomme data som passwords, API-nøgler og certifikater. Kubernetes base64-koder indholdet automatisk, men det er ikke kryptering — Secrets bør beskyttes med adgangskontrol (RBAC) i produktion. Secrets injiceres i containers på samme måde som ConfigMaps: som filer eller miljøvariabler.
+
+### Volumes og volumeMounts
+
+Et **volume** er en datakilde der kan monteres ind i en container — f.eks. en ConfigMap, en Secret eller et stykke disk-storage. Et **volumeMount** beskriver hvor i containerens filsystem volumet skal monteres.
+
+De kobles sammen ved hjælp af et navn:
+
+```yaml
+volumeMounts:
+  - name: html                        # Refererer til volumet nedenfor
+    mountPath: /usr/share/nginx/html  # Stien inde i containeren
+
+volumes:
+  - name: html                        # Samme navn som i volumeMount
+    configMap:
+      name: nginx-config              # Indholdet hentes fra denne ConfigMap
+```
+
+Når en ConfigMap eller Secret monteres som et volume, bliver hver nøgle til en fil — nøglenavnet bliver filnavnet og værdien bliver filindholdet.
+
 ---
 
 ## Rettelse af UTF-8 locale (æøå i terminalen)

@@ -21,6 +21,22 @@ spec:
           ports:
             - containerPort: 80  # Den port nginx lytter på inde i containeren
 
+          env:
+            - name: DB_PASSWORD          # Navn på miljøvariablen inde i containeren
+              valueFrom:
+                secretKeyRef:
+                  name: app-secret       # Navn på Secret ressourcen
+                  key: db-password       # Nøgle i Secret'en der skal bruges
+
+          volumeMounts:
+            - name: html                          # Matcher volumens navn nedenfor
+              mountPath: /usr/share/nginx/html    # Stien inde i containeren hvor filen monteres
+
+      volumes:
+        - name: html                  # Navn der bruges til at koble volume og volumeMount sammen
+          configMap:
+            name: nginx-config        # Henter indholdet fra denne ConfigMap
+
 ---
 
 # Service eksponerer Deployment'en så den kan nås via netværket
