@@ -169,3 +169,30 @@ Generation complete.
 ```
 
 Verificér med `locale -a | grep da_DK` — den skal returnere `da_DK.utf8`.
+
+---
+
+## SSH-agent til Claude Code
+
+Claude Code kører kommandoer i et ikke-interaktivt miljø uden en terminal. SSH kan derfor ikke prompte om en passphrase, og `git push` fejler med "Permission denied" selvom nøgle og config er korrekt sat op.
+
+### Løsning
+
+Start en SSH-agent og load nøglen inden Claude Code startes:
+
+```bash
+eval $(ssh-agent -s)
+ssh-add ~/.ssh/id_ed25519.github
+```
+
+Indtast passphrasen én gang. Start derefter Claude Code fra den samme shell — den arver `SSH_AUTH_SOCK` og kan pushe til GitHub uden interaktiv input.
+
+### Hvad `eval $(ssh-agent -s)` gør
+
+`ssh-agent -s` starter en agent som en baggrundsproces og printer:
+```
+SSH_AUTH_SOCK=/tmp/ssh-XXXXX/agent.1234; export SSH_AUTH_SOCK;
+SSH_AGENT_PID=1234; export SSH_AGENT_PID;
+```
+
+`eval` udfører dette output som shell-kommandoer i den aktuelle session, så `SSH_AUTH_SOCK` og `SSH_AGENT_PID` sættes som miljøvariabler. Uden `eval` ville agenten køre i baggrunden, men din shell — og Claude Code — ville ikke vide hvor den er.
