@@ -26,7 +26,23 @@ Næste emner på listen (ikke dokumenteret endnu):
 - ResourceQuotas og LimitRanges
 
 ## Manifests
-Alle YAML-manifests ligger i roden af repositoriet. Nye manifests dokumenteres linje for linje med kommentarer direkte i YAML-filen.
+Manifests organiseres i to lag:
+
+- **Roden** (`nginx.yaml`, `ingress.yaml` osv.) — de aktuelle, kørende manifests
+- **Nummererede undermapper** — snapshot af manifesternes tilstand da emnet blev introduceret:
+  - `01-deployment/` — Deployment og Service (NodePort)
+  - `02-configmap/` — tilføjer ConfigMap, Secret og volumes
+  - `03-namespaces/` — tilføjer namespace: webapps
+  - `04-ingress/` — skifter til ClusterIP og tilføjer Ingress
+
+Når et nyt emne introducerer ændringer til eksisterende manifests, oprettes en ny nummereret mappe med alle relevante filer i deres tilstand på det tidspunkt.
+
+Hvert afsnit i README indeholder:
+1. Forklaring af konceptet
+2. Link til relevant manifest-mappe
+3. kubectl-kommandoer: **Anvend**, **Inspicér**, **Verificér**
+
+Nye manifests dokumenteres linje for linje med kommentarer direkte i YAML-filen.
 
 ## Git
 - Commit og push efter hvert afsluttet emne

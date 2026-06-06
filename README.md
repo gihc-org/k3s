@@ -49,26 +49,65 @@ Hvis `/boot/firmware/cmdline.txt` overskrives af en fremtidig OS-opdatering, ska
 
 ## Kubernetes — grundlæggende begreber
 
+Manifesterne nedenfor findes i nummererede undermapper der afspejler tilstanden på det tidspunkt emnet blev introduceret:
+
+```
+01-deployment/   → Deployment og Service (NodePort)
+02-configmap/    → tilføjer ConfigMap, Secret og volumes
+03-namespaces/   → tilføjer namespace: webapps
+04-ingress/      → skifter til ClusterIP og tilføjer Ingress
+```
+
 ### YAML-filer (manifests)
 
 Kubernetes styres ved at beskrive den ønskede tilstand i YAML-filer, som kaldes **manifests**. I stedet for at fortælle Kubernetes *hvad det skal gøre* (imperativt), fortæller du det *hvad du vil have* (deklarativt). Kubernetes sørger selv for at virkeligheden matcher beskrivelsen.
-
-En YAML-fil sendes til Kubernetes med:
-```bash
-sudo k3s kubectl apply -f filnavn.yaml
-```
 
 Kører du den samme kommando igen uden at have ændret filen, sker der ingenting — Kubernetes registrerer at tilstanden allerede matcher.
 
 Én fil kan indeholde flere ressourcer adskilt af `---`.
 
+**Anvend et manifest:**
+```bash
+sudo k3s kubectl apply -f filnavn.yaml
+```
+
+**Slet en ressource:**
+```bash
+sudo k3s kubectl delete -f filnavn.yaml
+```
+
 ### Pod
 
 Den mindste enhed i Kubernetes. En Pod indeholder én eller flere containers der deler netværk og storage. Du opretter sjældent Pods direkte — det gøres typisk via en Deployment.
 
+**Inspicér kørende Pods:**
+```bash
+sudo k3s kubectl get pods
+sudo k3s kubectl describe pod <pod-navn>
+sudo k3s kubectl logs <pod-navn>
+```
+
 ### Deployment
 
 En Deployment beskriver hvordan en applikation skal køre: hvilket container-image der bruges, hvor mange kopier (replicas) der skal køre, og hvordan opdateringer håndteres. Hvis en Pod crasher, opretter Kubernetes automatisk en ny for at opretholde det ønskede antal replicas.
+
+Manifest: [`01-deployment/nginx.yaml`](01-deployment/nginx.yaml)
+
+**Anvend:**
+```bash
+sudo k3s kubectl apply -f 01-deployment/nginx.yaml
+```
+
+**Inspicér:**
+```bash
+sudo k3s kubectl get deployments
+sudo k3s kubectl describe deployment nginx
+```
+
+**Verificér:** Pod'en skal have status `Running`:
+```bash
+sudo k3s kubectl get pods
+```
 
 ### Service
 
@@ -80,9 +119,25 @@ En Service eksponerer en Deployment for netværkstrafik. Pods får tilfældige I
 | `NodePort` | Eksponerer en fast port på selve noden, tilgængelig udefra |
 | `LoadBalancer` | Opretter en ekstern load balancer (kræver cloud-udbyder eller MetalLB) |
 
+**Inspicér:**
+```bash
+sudo k3s kubectl get services
+sudo k3s kubectl describe service nginx
+```
+
+**Verificér:** Med NodePort på port 30080:
+```bash
+curl http://localhost:30080
+```
+
 ### Labels og selectors
 
 Labels er nøgle/værdi-par der sættes på ressourcer, f.eks. `app: nginx`. En Service bruger en selector til at finde de Pods den skal sende trafik til — alle Pods med et matchende label modtager trafik. Det er denne mekanisme der kobler en Service og en Deployment sammen.
+
+**Inspicér labels på Pods:**
+```bash
+sudo k3s kubectl get pods --show-labels
+```
 
 ### Container-images og registries
 
@@ -106,9 +161,39 @@ En ConfigMap gemmer konfigurationsdata som nøgle/værdi-par — f.eks. en konfi
 - **Som en fil** — monteres på en sti inde i containeren via et volume
 - **Som en miljøvariabel** — værdien bliver tilgængelig som en `$VARIABEL` inde i containeren
 
+Manifest: [`02-configmap/configmap.yaml`](02-configmap/configmap.yaml)
+
+**Anvend:**
+```bash
+sudo k3s kubectl apply -f 02-configmap/configmap.yaml
+```
+
+**Inspicér:**
+```bash
+sudo k3s kubectl get configmaps
+sudo k3s kubectl describe configmap nginx-config
+```
+
 ### Secret
 
 En Secret fungerer som en ConfigMap, men er beregnet til følsomme data som passwords, API-nøgler og certifikater. Kubernetes base64-koder indholdet automatisk, men det er ikke kryptering — Secrets bør beskyttes med adgangskontrol (RBAC) i produktion. Secrets injiceres i containers på samme måde som ConfigMaps: som filer eller miljøvariabler.
+
+Manifest: [`02-configmap/secret.yaml`](02-configmap/secret.yaml)
+
+**Anvend:**
+```bash
+sudo k3s kubectl apply -f 02-configmap/secret.yaml
+```
+
+**Inspicér:**
+```bash
+sudo k3s kubectl get secrets
+```
+
+**Verificér at Secret er tilgængelig som miljøvariabel inde i containeren:**
+```bash
+sudo k3s kubectl exec <pod-navn> -- env | grep DB_PASSWORD
+```
 
 ### Volumes og volumeMounts
 
@@ -128,6 +213,13 @@ volumes:
 ```
 
 Når en ConfigMap eller Secret monteres som et volume, bliver hver nøgle til en fil — nøglenavnet bliver filnavnet og værdien bliver filindholdet.
+
+Manifest: [`02-configmap/nginx.yaml`](02-configmap/nginx.yaml)
+
+**Verificér at filen er monteret korrekt inde i containeren:**
+```bash
+sudo k3s kubectl exec <pod-navn> -- cat /usr/share/nginx/html/index.html
+```
 
 ### Namespaces
 
@@ -154,9 +246,19 @@ metadata:
 
 En ressource kan kun se ConfigMaps og Secrets i sit eget namespace. Namespace skal eksistere før ressourcer oprettes i det — anvend derfor `namespace.yaml` før de øvrige manifests.
 
-For at se ressourcer i et specifikt namespace:
+Manifests: [`03-namespaces/`](03-namespaces/)
 
+**Anvend:**
 ```bash
+sudo k3s kubectl apply -f 03-namespaces/namespace.yaml
+sudo k3s kubectl apply -f 03-namespaces/configmap.yaml
+sudo k3s kubectl apply -f 03-namespaces/secret.yaml
+sudo k3s kubectl apply -f 03-namespaces/nginx.yaml
+```
+
+**Inspicér:**
+```bash
+sudo k3s kubectl get namespaces
 sudo k3s kubectl get all -n webapps
 ```
 
@@ -184,6 +286,28 @@ rules:
 ```
 
 Med Ingress bruges `ClusterIP` som Service-type i stedet for `NodePort`.
+
+Manifests: [`04-ingress/`](04-ingress/)
+
+**Anvend:**
+```bash
+sudo k3s kubectl apply -f 04-ingress/namespace.yaml
+sudo k3s kubectl apply -f 04-ingress/configmap.yaml
+sudo k3s kubectl apply -f 04-ingress/secret.yaml
+sudo k3s kubectl apply -f 04-ingress/nginx.yaml
+sudo k3s kubectl apply -f 04-ingress/ingress.yaml
+```
+
+**Inspicér:**
+```bash
+sudo k3s kubectl get ingress -n webapps
+sudo k3s kubectl describe ingress nginx -n webapps
+```
+
+**Verificér:**
+```bash
+curl http://localhost
+```
 
 #### Hvorfor Ingress/ClusterIP er bedre end NodePort
 

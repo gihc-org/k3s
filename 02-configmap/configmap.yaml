@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-config           # Navnet bruges til at referere til ConfigMap'en fra andre ressourcer
+data:
+  index.html: |                # Nøgle = filnavn, værdi = filindhold
+    <html>
+      <body>
+        <h1>Hej fra Kubernetes!</h1>
+      </body>
+    </html>
