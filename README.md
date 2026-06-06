@@ -132,6 +132,57 @@ sudo k3s kubectl get all -n webapps
 
 **Namespaces vs. separate clusters:** Namespaces giver logisk adskillelse, men ikke fuld isolation. Til adskillelse af `development` og `production` bruger man typisk separate clusters — en fejl i ét miljø kan da ikke påvirke det andet.
 
+### Ingress
+
+En Ingress er regler der styrer hvordan ekstern HTTP/HTTPS-trafik routes til Services inde i clusteret. I stedet for at hver Service eksponerer sin egen port udadtil, går al trafik ind gennem ét fælles indgangspunkt.
+
+Ingress kræver en **Ingress-controller** — en komponent der læser Ingress-reglerne og rent faktisk håndterer trafikken. k3s leveres med **Traefik** som Ingress-controller, der lytter på port 80 og 443.
+
+Ingress-controlleren er ikke nok alene — den ved ikke hvor trafikken skal hen. Et Ingress-manifest definerer reglerne:
+
+```yaml
+rules:
+  - http:
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: nginx
+              port:
+                number: 80
+```
+
+Med Ingress bruges `ClusterIP` som Service-type i stedet for `NodePort`.
+
+#### Hvorfor Ingress/ClusterIP er bedre end NodePort
+
+Med NodePort skal hver Service have sin egen unikke port i intervallet 30000–32767. Med to applikationer er det til at overskue, men forestil dig ti applikationer:
+
+```
+nginx:       http://<ip>:30080
+api:         http://<ip>:30081
+dashboard:   http://<ip>:30082
+auth:        http://<ip>:30083
+...
+```
+
+Det giver tre problemer:
+- **Portkonflikter** — du skal holde styr på hvilke porte der er i brug og manuelt undgå overlap
+- **Brugervenlighed** — brugere og systemer skal kende det specifikke portnummer for hver applikation
+- **Ingen HTTPS** — NodePort eksponerer en rå TCP-port; TLS skal konfigureres individuelt i hver applikation
+
+Med Ingress ser det i stedet sådan ud:
+
+```
+nginx:       http://<ip>/
+api:         http://<ip>/api
+dashboard:   http://<ip>/dashboard
+auth:        http://<ip>/auth
+```
+
+Al trafik går ind på port 80/443. Ingress-controlleren læser URL-stien og router trafikken til den rigtige Service internt. Nye applikationer tilføjes ved at tilføje en regel i Ingress-manifestet — ingen porte at holde styr på, ingen konflikter.
+
 ### ConfigMap
 
 En ConfigMap gemmer konfigurationsdata som nøgle/værdi-par — f.eks. en konfigurationsfil, en HTML-fil eller en app-indstilling. Data er ikke krypteret og må ikke indeholde følsomme oplysninger. ConfigMaps kan injiceres i en container på to måder:

@@ -48,11 +48,10 @@ metadata:
   namespace: webapps     # Ressourcen oprettes i webapps namespace i stedet for default
 
 spec:
-  type: NodePort         # Eksponerer servicen på en fast port på selve noden (Raspberry Pi'en)
+  type: ClusterIP        # Kun tilgængelig internt i clusteret — Ingress håndterer ekstern adgang
   selector:
     app: nginx           # Sender trafik videre til Pods med dette label
 
   ports:
     - port: 80           # Port som Service'en lytter på internt i clusteret
       targetPort: 80     # Port på Pod'en som trafikken sendes videre til
-      nodePort: 30080    # Ekstern port på noden — tilgængelig udefra på http://<ip>:30080
