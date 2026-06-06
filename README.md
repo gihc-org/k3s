@@ -337,6 +337,56 @@ auth:        http://<ip>/auth
 
 Al trafik går ind på port 80/443. Ingress-controlleren læser URL-stien og router trafikken til den rigtige Service internt. Nye applikationer tilføjes ved at tilføje en regel i Ingress-manifestet — ingen porte at holde styr på, ingen konflikter.
 
+### RBAC
+
+RBAC (Role-Based Access Control) styrer hvem der må gøre hvad i clusteret. Uden eksplicit tildelte rettigheder kan en Pod ikke tilgå nogen Kubernetes-ressourcer. Princippet er **least privilege** — en Pod får kun præcis de rettigheder den har brug for.
+
+RBAC bygger på fire ressourcer:
+
+| Ressource | Beskrivelse |
+|-----------|-------------|
+| `ServiceAccount` | En identitet for processer der kører i Pods |
+| `Role` | Definerer tilladte handlinger på ressourcer inden for ét namespace |
+| `ClusterRole` | Som Role, men gælder på tværs af alle namespaces |
+| `RoleBinding` | Knytter en Role til en ServiceAccount i ét namespace |
+| `ClusterRoleBinding` | Knytter en ClusterRole til en ServiceAccount på tværs af namespaces |
+
+En `Role` definerer rettigheder via `rules` med tre felter:
+- `apiGroups` — hvilken API-gruppe ressourcen tilhører (`""` er core-gruppen med Pods, Services, ConfigMaps osv.)
+- `resources` — hvilke ressourcetyper reglen gælder for
+- `verbs` — tilladte handlinger: `get`, `list`, `watch`, `create`, `update`, `patch`, `delete`
+
+En ServiceAccount tilknyttes en Pod via `serviceAccountName` i Deployment'ens spec:
+
+```yaml
+spec:
+  serviceAccountName: nginx-sa
+```
+
+Manifest: [`05-rbac/`](05-rbac/)
+
+**Anvend:**
+```bash
+sudo k3s kubectl apply -f 05-rbac/namespace.yaml
+sudo k3s kubectl apply -f 05-rbac/configmap.yaml
+sudo k3s kubectl apply -f 05-rbac/secret.yaml
+sudo k3s kubectl apply -f 05-rbac/rbac.yaml
+sudo k3s kubectl apply -f 05-rbac/nginx.yaml
+sudo k3s kubectl apply -f 05-rbac/ingress.yaml
+```
+
+**Inspicér:**
+```bash
+sudo k3s kubectl get serviceaccounts -n webapps
+sudo k3s kubectl get roles -n webapps
+sudo k3s kubectl get rolebindings -n webapps
+```
+
+**Verificér at Pod'en bruger den korrekte ServiceAccount:**
+```bash
+sudo k3s kubectl get pod <pod-navn> -n webapps -o jsonpath='{.spec.serviceAccountName}'
+```
+
 ---
 
 ## Rettelse af UTF-8 locale (æøå i terminalen)

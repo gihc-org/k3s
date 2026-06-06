@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nginx-sa                # Navn på ServiceAccount — bruges som identitet for nginx-Pod'en
+  namespace: webapps
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: configmap-reader        # Navn på Role — beskriver hvad den tillader
+  namespace: webapps            # Rollen gælder kun i dette namespace
+rules:
+  - apiGroups: [""]             # "" betyder core API-gruppen (Pods, Services, ConfigMaps osv.)
+    resources: ["configmaps"]   # Hvilke ressourcer reglerne gælder for
+    verbs: ["get", "list"]      # Tilladte handlinger — get=hent én, list=hent alle
+
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nginx-configmap-reader  # Navn på RoleBinding
+  namespace: webapps
+subjects:
+  - kind: ServiceAccount
+    name: nginx-sa              # ServiceAccount der tildeles rollen
+    namespace: webapps
+roleRef:
+  kind: Role
+  name: configmap-reader        # Rollen der tildeles
+  apiGroup: rbac.authorization.k8s.io

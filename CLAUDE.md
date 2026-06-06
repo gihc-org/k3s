@@ -19,9 +19,9 @@ Nuværende rækkefølge:
 9. Volumes og volumeMounts
 10. Namespaces
 11. Ingress
+12. RBAC
 
 Næste emner på listen (ikke dokumenteret endnu):
-- RBAC
 - PersistentVolumes og PersistentVolumeClaims
 - ResourceQuotas og LimitRanges
 
@@ -34,6 +34,7 @@ Manifests organiseres i to lag:
   - `02-configmap/` — tilføjer ConfigMap, Secret og volumes
   - `03-namespaces/` — tilføjer namespace: webapps
   - `04-ingress/` — skifter til ClusterIP og tilføjer Ingress
+  - `05-rbac/` — tilføjer ServiceAccount, Role og RoleBinding
 
 Når et nyt emne introducerer ændringer til eksisterende manifests, oprettes en ny nummereret mappe med alle relevante filer i deres tilstand på det tidspunkt.
 
