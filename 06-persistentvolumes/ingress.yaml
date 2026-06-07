@@ -1,0 +1,16 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nginx
+  namespace: webapps              # Skal være i samme namespace som den Service den peger på
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /               # Matcher alle requests der starter med /
+            pathType: Prefix      # Prefix betyder at /foo og /bar også matches
+            backend:
+              service:
+                name: nginx       # Sender trafikken videre til denne Service
+                port:
+                  number: 80      # Porten på Service'en

@@ -387,6 +387,56 @@ sudo k3s kubectl get rolebindings -n webapps
 sudo k3s kubectl get pod <pod-navn> -n webapps -o jsonpath='{.spec.serviceAccountName}'
 ```
 
+### PersistentVolumes og PersistentVolumeClaims
+
+Containerens filsystem er **ephemeral** — alt data der skrives inde i en container går tabt når Pod'en genstarter. PersistentVolumes løser dette ved at koble ekstern lagerplads til en container.
+
+To ressourcer arbejder sammen:
+
+| Ressource | Beskrivelse |
+|-----------|-------------|
+| `PersistentVolume (PV)` | Det faktiske stykke lagerplads — lokal disk, NFS, cloud-storage osv. Cluster-niveau ressource |
+| `PersistentVolumeClaim (PVC)` | En anmodning om lagerplads fra en Pod. Kubernetes finder og binder en passende PV |
+
+k3s leveres med StorageClass'en `local-path` der automatisk opretter PVs på nodens lokale disk (**dynamisk provisionering**). Det betyder vi kun behøver at oprette en PVC — k3s klarer PV'en selv.
+
+En PVC monteres i en Deployment som et volume — på samme måde som en ConfigMap, men med `persistentVolumeClaim` i stedet for `configMap`:
+
+```yaml
+volumes:
+  - name: logs
+    persistentVolumeClaim:
+      claimName: nginx-logs     # Refererer til PVC'en
+```
+
+**Access modes** styrer hvordan lagerplads deles:
+
+| Mode | Beskrivelse |
+|------|-------------|
+| `ReadWriteOnce` | Kun én node må skrive ad gangen (typisk til lokal disk) |
+| `ReadOnlyMany` | Mange noder må læse samtidigt |
+| `ReadWriteMany` | Mange noder må skrive samtidigt (kræver netværksbaseret storage, f.eks. NFS) |
+
+Manifest: [`06-persistentvolumes/`](06-persistentvolumes/)
+
+**Anvend:**
+```bash
+sudo k3s kubectl apply -f 06-persistentvolumes/pvc.yaml
+sudo k3s kubectl apply -f 06-persistentvolumes/nginx.yaml
+```
+
+**Inspicér:**
+```bash
+sudo k3s kubectl get pvc -n webapps
+sudo k3s kubectl get pv
+```
+
+**Verificér** at PVC har status `Bound` og at logfiler ligger persistent:
+```bash
+sudo k3s kubectl exec -n webapps <pod-navn> -- ls /var/log/nginx
+# → access.log  error.log
+```
+
 ---
 
 ## Rettelse af UTF-8 locale (æøå i terminalen)

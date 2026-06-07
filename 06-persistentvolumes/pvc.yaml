@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nginx-logs              # Navn på PVC — bruges til at referere til den fra Deployment'en
+  namespace: webapps
+spec:
+  accessModes:
+    - ReadWriteOnce             # Kun én node må skrive til denne storage ad gangen
+  resources:
+    requests:
+      storage: 100Mi            # Anmodning om 100 MB lagerplads
+  storageClassName: local-path  # Bruger k3s' indbyggede StorageClass der provisionerer på lokal disk
